@@ -1,0 +1,10 @@
+# Never commit these
+.streamlit/secrets.toml
+.env
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+/tmp/
+*.pptx
+venv/
