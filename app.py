@@ -5,6 +5,11 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
+
+# Auto-install node_modules on Streamlit Cloud
+from setup import ensure_node_modules
+ensure_node_modules()
+
 from youtube_search import fetch_transcripts_from_urls, fetch_transcripts_from_search
 from ai_generator import generate_slides
 from image_fetcher import get_slide_image
@@ -23,6 +28,7 @@ GROQ_KEY     = get_secret("GROQ_API_KEY")
 YT_KEY       = get_secret("YOUTUBE_API_KEY")
 PEXELS_KEY   = get_secret("PEXELS_API_KEY")
 PIXABAY_KEY  = get_secret("PIXABAY_API_KEY", "PIXABAY_API_KEY")
+SUPADATA_KEY = get_secret("SUPADATA_API_KEY")
 GROQ_MODEL   = get_secret("GROQ_MODEL") or "llama-3.3-70b-versatile"
 
 KEYS_OK = bool(GROQ_KEY)
@@ -246,6 +252,8 @@ with st.sidebar:
         if dev_groq:    GROQ_KEY   = dev_groq
         if dev_yt:      YT_KEY     = dev_yt
         if dev_pexels:  PEXELS_KEY = dev_pexels
+        dev_supadata = st.text_input("Supadata Key", type="password", placeholder="...")
+        if dev_supadata: SUPADATA_KEY = dev_supadata
 
     st.markdown("---")
     st.markdown("""<div style='font-size:0.72rem;color:#475569;line-height:1.75'>
@@ -258,6 +266,7 @@ with st.sidebar:
 • YouTube Data API v3<br>
 • youtube-transcript-api<br>
 • Pexels Photos<br>
+• Supadata Transcripts<br>
 • pptxgenjs
 </div>""", unsafe_allow_html=True)
 
@@ -411,7 +420,7 @@ if generate_btn:
 
     # Manual URLs
     if urls:
-        manual, errs_list = fetch_transcripts_from_urls(urls)
+        manual, errs_list = fetch_transcripts_from_urls(urls, SUPADATA_KEY)
         for e in errs_list: err(e)
         for t in manual:
             ok(f"Transcript from URL — <b>{t['vid_id']}</b> ({len(t['text'].split()):,} words)")
@@ -423,7 +432,7 @@ if generate_btn:
         need = max(1, max_videos - len(all_transcripts))
         info(f"Searching YouTube for: <b>{search_query.strip()}</b>…")
         searched, errs_list, raw_vids = fetch_transcripts_from_search(
-            search_query.strip(), YT_KEY, max_videos=need
+            search_query.strip(), YT_KEY, SUPADATA_KEY, max_videos=need
         )
         for e in errs_list: err(e)
         for t in searched:
